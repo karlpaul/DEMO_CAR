@@ -1,0 +1,575 @@
+//新的主机，控制传感器 和红外
+int led1=0;
+int led2=0;//灰度
+
+#include "DHT.h"
+#include "DHT_U.h"
+
+#include <Adafruit_Sensor.h>
+#define DHTPIN 13
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+const int TrigPin_backward = 2; //发送超声波
+const int EchoPin_backward = 3; //接收超声波
+const int TrigPin_left = 4; //发送超声波
+const int EchoPin_left = 5; //接收超声波
+const int TrigPin_right = 6; //发送超声波
+const int EchoPin_right = 7; //接收超声波
+const int TrigPin_forward = 8; //发送超声波
+const int EchoPin_forward = 9; //接收超声波
+//const int Tem_Hum_Pin=13;
+int Fire_Pin =A0;
+
+#include <Wire.h>//声明I2C库文件
+#include <IRremote.h>  //红外库文件
+int RECV_PIN = A3;     //红外的input PIN口
+IRrecv irrecv(RECV_PIN); //红外
+decode_results results;   //红外
+int x=0;   //作为I2C通信的值
+
+
+#include<ESP8266.h>
+
+#ifdef ESP32
+#error "This code is not recommended to run on the ESP32 platform! Please check your Tools->Board setting."
+#endif
+
+/**
+**CoreUSB UART Port: [Serial1] [D0,D1]
+**Core+ UART Port: [Serial1] [D2,D3]
+**/
+#if defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega1284P__) || defined (__AVR_ATmega644P__) || defined(__AVR_ATmega128RFA1__)
+#define EspSerial Serial1
+#define UARTSPEED  115200
+#endif
+
+/**
+**Core UART Port: [SoftSerial] [D2,D3]
+**/
+#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega328__) || defined (__AVR_ATmega328P__)
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(11, 10); // RX, TX 配置10、11为软串口  
+
+#define EspSerial mySerial
+#define UARTSPEED  9600
+#endif
+
+#define SSID        "PAUL"
+#define PASSWORD    "qwertyuiop"
+#define HOST_NAME   "192.168.43.183"//需要访问的网页地址或IP
+#define HOST_PORT   (80) //HTTP 协议默认端口为80
+
+ESP8266 wifi(&EspSerial);
+
+
+
+void setup()
+{
+   pinMode(A1,INPUT);//灰度接口
+   pinMode(A2,INPUT);
+
+  dht.begin();
+  irrecv.enableIRIn();   // 启动IR接收器  
+  Wire.begin();                // 加入 i2c 总线，作为主机
+  Serial.begin(115200);
+  mySerial.begin(115200);
+pinMode(TrigPin_backward, OUTPUT);
+pinMode(EchoPin_backward, INPUT);
+pinMode(TrigPin_left, OUTPUT);
+pinMode(EchoPin_left, INPUT);
+pinMode(TrigPin_right, OUTPUT);
+pinMode(EchoPin_right, INPUT);
+pinMode(TrigPin_forward, OUTPUT);
+pinMode(EchoPin_forward, INPUT);
+
+//pinMode(Tem_Hum_Pin,INPUT);
+pinMode(Fire_Pin,INPUT);
+
+while (!Serial); // wait for Leonardo enumeration, others continue immediately
+  Serial.print(F("setup begin\r\n"));
+  delay(100);
+
+  WifiInit(EspSerial, UARTSPEED);
+
+  Serial.print(F("FW Version: "));
+  Serial.println(wifi.getVersion().c_str());
+
+
+  if (wifi.setOprToStation()) 
+  {
+    Serial.print(F("to station ok\r\n"));
+  } else {
+    Serial.print(F("to station err\r\n"));
+  }
+
+  if (wifi.joinAP(SSID, PASSWORD)) {
+    Serial.print(F("Join AP success\r\n"));
+    Serial.print(F("IP: "));
+    Serial.println(wifi.getLocalIP().c_str());
+  } else {
+    Serial.print(F("Join AP failure\r\n"));
+  }
+
+  Serial.print(F("setup end\r\n"));
+
+
+
+  
+
+if (mySerial.available())    
+        Serial.write(mySerial.read());    
+      if (Serial.available())    
+        mySerial.write(Serial.read()); 
+
+         
+
+    if (wifi.createTCP(HOST_NAME, HOST_PORT)) { //建立TCP请求
+        Serial.print("create tcp ok\r\n");
+    } else {
+        Serial.print("create tcp err\r\n");
+    }
+
+
+
+
+}
+
+void loop()
+{
+int test=0;
+ //火焰
+ int fire=analogRead(Fire_Pin);
+ if(fire>500)
+ {
+  test=0;
+  }
+  else if (fire<500)
+  {
+     test=1;
+  }
+ char firechar[20];
+  dtostrf(test,1,0,firechar);
+  
+  const int N=10;
+      double b;
+      double l;
+      double r;
+      double f;
+
+  //
+  //
+digitalWrite(TrigPin_backward, LOW);
+delayMicroseconds(2);
+digitalWrite(TrigPin_backward, HIGH);
+delayMicroseconds(10);
+digitalWrite(TrigPin_backward, LOW);
+
+b=pulseIn(EchoPin_backward, HIGH) / 58.0;//hou
+
+digitalWrite(TrigPin_left, LOW);
+delayMicroseconds(2);
+digitalWrite(TrigPin_left, HIGH);
+delayMicroseconds(10);
+digitalWrite(TrigPin_left, LOW);
+
+l=pulseIn(EchoPin_left, HIGH) / 58.0;//zuo
+
+digitalWrite(TrigPin_right, LOW);
+delayMicroseconds(2);
+digitalWrite(TrigPin_right, HIGH);
+delayMicroseconds(10);
+digitalWrite(TrigPin_right, LOW);
+
+r=pulseIn(EchoPin_right, HIGH) / 58.0;//you
+
+digitalWrite(TrigPin_forward, LOW);
+delayMicroseconds(2);
+digitalWrite(TrigPin_forward, HIGH);
+delayMicroseconds(10);
+digitalWrite(TrigPin_forward, LOW);
+
+f=pulseIn(EchoPin_forward, HIGH) / 58.0;//qian
+
+
+
+
+
+
+
+ char f1[20],r1[20],l1[20],b1[20];
+
+dtostrf(f,4,3,f1);
+dtostrf(b,4,3,b1);
+dtostrf(r,4,3,r1);
+dtostrf(l,4,3,l1);
+Serial.print(f1);
+Serial.print("   ");
+Serial.print(b1);
+Serial.print("   ");
+Serial.print(l1);
+Serial.print("   ");
+Serial.print(r1);
+Serial.println("   ");
+Serial.println("************************");
+  delay(15);
+  float temperature=dht.readTemperature();
+  float humidity=dht.readHumidity();
+
+  
+  //读到了 int temperature 和 int humidity
+Serial.println(temperature);
+Serial.println(humidity);
+  
+char temp[20],hum[20];
+dtostrf(temperature,2,1,temp);
+dtostrf(humidity,2,1,hum);
+      if(dht.readTemperature()>40||dht.readHumidity()<15||test==1)
+      {
+        x=6;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+      }
+
+
+
+  led1=digitalRead(A1); 
+  led2=digitalRead(A2); 
+
+     /*if(led1==0&&led2==0)
+      {
+        x=1;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+      }
+      else if(led1==1)
+        {
+          x=5;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+          delay(50);
+          x=3;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+          if(led1==0)
+          {
+            x=5;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+            delay(50);
+            x=1;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+          }
+        }
+      else if(led2==1)
+      {
+        x=5;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+        delay(50);
+        x=4;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+        if(led2==0)
+        {
+          x=5;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+          delay(50);
+          x=1;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+        }
+      }
+      else if(led2==1&&led1==1)
+      {
+        x=5;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+      }*/
+Serial.print(led1);
+Serial.print("    ");
+Serial.print(led2);
+Serial.println("  ");
+
+
+
+      
+    
+  if (irrecv.decode(&results)||(results.value==0x1FE40BF))   
+  {
+    
+if(results.value==0x1FE40BF)
+{
+    if(led1==0&&led2==0)
+      {
+        if(f<N)
+      x=5;
+      else
+        x=8;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+      }
+      else if(led1==1)
+        {
+          x=5;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+          delay(50);
+          if(f<N)
+      x=5;
+      else
+          x=9;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+          if(led1==0)
+          {
+            x=5;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+            delay(50);
+              if(f<N)
+        x=5;
+        else
+            x=8;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+          }
+        }
+      else if(led2==1)
+      {
+        x=5;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+        delay(50);
+        if(f<N)
+      x=5;
+      else
+        x=10;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+        if(led2==0)
+        {
+          x=5;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+          delay(50);
+          if(f<N)
+      x=5;
+      else
+          x=8;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+        }
+      }
+      else if(led2==1&&led1==1)
+      {
+        x=5;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+      }
+}
+
+
+
+
+
+
+    
+    while(results.value==0x1FE807F)
+     {
+      x=5;
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+
+//温湿度
+Serial.println("=====================================");
+
+
+
+      uint8_t buffer[100] = {0};
+     char *hello=(char *)malloc(sizeof(char)*200);
+    strcat(hello,"GET /index.php?carup=");
+       strcat(hello,f1);
+       strcat(hello,"&cardown=");
+       strcat(hello,b1);
+       strcat(hello,"&carleft=");
+       strcat(hello,l1);
+       strcat(hello,"&carright=");
+       strcat(hello,r1);
+       //增加温湿度
+       strcat(hello,"&temperature=");
+       strcat(hello,temp);
+       strcat(hello,"&humidity=");
+       strcat(hello,hum);//火焰
+       strcat(hello,"&fire=");
+       strcat(hello,firechar);
+
+       strcat(hello," HTTP/1.1\r\nHost: 192.168.43.183\r\nConnection: keep-alive\r\n\r\n");
+
+
+    if (wifi.releaseTCP()) {
+        Serial.print("release tcp ok\r\n");
+    } else {
+        Serial.print("release tcp err\r\n");
+    }
+
+    if (wifi.createTCP(HOST_NAME, HOST_PORT)) { //建立TCP请求
+        Serial.print("create tcp ok\r\n");
+    } else {
+        Serial.print("create tcp err\r\n");
+    }
+ 
+Serial.println(hello);
+  
+    //char *hello = "GET /index.php?carup=111.0&cardown=22.2&carleft=999.8&carright=5435 HTTP/1.1\r\nHost: 192.168.43.183\r\nConnection: keep-alive\r\n\r\n"; //通过HTTP GET方法访问本地数据库
+    wifi.send((const uint8_t*)hello, strlen(hello)); //向服务器发起Http请求
+    free(hello);
+    uint32_t len = wifi.recv(buffer, sizeof(buffer), 1000); //本地服务器返回给客户端的内容长度
+    if (len > 0) 
+    {
+        Serial.print("Received:[");
+        for(uint32_t i = 0; i < len; i++)
+        {
+            Serial.print((char)buffer[i]);  //显示服务器返回内容
+        }
+        Serial.print("]\r\n");
+    }
+  if (irrecv.decode(&results))   
+  break;
+ }
+/*
+    if (wifi.createTCP(HOST_NAME, HOST_PORT)) { //建立TCP请求
+        Serial.print("create tcp ok\r\n");
+    } else {
+        Serial.print("create tcp err\r\n");
+    }
+  */   
+  
+
+
+
+
+
+
+     Serial.println(results.value, HEX);   
+     if(results.value==0x1FEA05F)
+     {
+      if(f<N)
+      x=5;
+      else
+      x=1;//前
+      }
+       if(results.value==0X1FED827)
+     {
+      if(b<N)
+      x=5;
+      else
+      x=2;//后
+      }
+       if(results.value==0X1FEE01F)
+     {
+      if(l<N)
+      x=5;
+      else
+      {
+         x=3;//左
+
+      }
+     }
+       if(results.value==0X1FE906F)
+     {
+      if(r<N)
+      x=5;
+      else
+      {
+      x=4;//右
+
+      }
+     }
+       if(results.value==0X1FE10EF)
+     {
+      x=5;//停
+      } 
+
+      if(results.value==0x1FEB04F)
+      {x=7;
+        }
+      Serial.println(x);  
+      Wire.beginTransmission(4); //发送数据到设备号为4的从机
+      Wire.write(x);              // 发送变量x中的一个字节  
+      Wire.endTransmission();    // 停止发送
+      //Wire.write(x); // 响应主机的通知，向主机发送一个字节数据
+      Serial.println("已经write了 ");
+     irrecv.resume();
+     Serial.println("  ");
+     
+     
+     Serial.print("back:"); Serial.print(b);
+     Serial.print("   left");Serial.print(l);Serial.print("   right");
+     Serial.print(r);Serial.print("    up");Serial.print(f);
+     Serial.println("  ");
+  }
+  else if(f<N||(l<N&&r<N)||b<N)
+  {
+    x=5;
+    Serial.println(x);  
+    Wire.beginTransmission(4); //发送数据到设备号为4的从机
+    Wire.write(x);              // 发送变量x中的一个字节  
+    Wire.endTransmission();    // 停止发送
+  }
+  delay(100);//延时
+}
+
+/*void test() //灰度传感器数据接收    
+{                    
+  led1=digitalRead(A1); 
+  led2=digitalRead(A2); 
+ }*/
+
+/*
+void requestEvent()
+{
+  //把接收主机发送的数据包中的最后一个字节再上传给主机
+  Serial.println("已经到REQUEST  write 前了");
+  Wire.write(x); // 响应主机的通知，向主机发送一个字节数据
+   Serial.println("已经write了 ");
+}
+*/
+// 当从机接收到主机字符，执行该事件
+/*void receiveEvent(int howMany)
+{
+  while( Wire.available()>1) // 循环执行，直到数据包只剩下最后一个字符
+  {
+    char c = Wire.receive(); // 作为字符接收字节
+    Serial.print(c);         // 把字符打印到串口监视器中
+  } 
+  //接收主机发送的数据包中的最后一个字节
+  x = Wire.receive();    // 作为整数接收字节
+  Serial.println(x);    //把整数打印到串口监视器中，并回车 
+}
+*/
+//当主机通知从机上传数据，执行该事件
+

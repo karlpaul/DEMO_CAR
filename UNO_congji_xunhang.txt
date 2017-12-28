@@ -1,0 +1,318 @@
+//新的从机，控制电机
+#include <Wire.h>  //I2C 的库文件
+int c=0;   //c  接受红外的数据，控制电机
+
+
+int led1=0;
+int led2=0;//灰度
+
+
+void setup()
+{ 
+  Serial.begin(9600);   
+  Wire.begin(4); // 加入 i2c 总线，作为4号从机
+  pinMode(2,INPUT);//灰度接口
+   pinMode(3,INPUT);
+  
+   pinMode(13,OUTPUT);  //设置输出口
+   pinMode(12,OUTPUT);  //设置输出口
+   pinMode(8,OUTPUT);  //设置输出口
+   pinMode(7,OUTPUT);  //设置输出口
+   pinMode(4,OUTPUT);  //设置输出口
+
+  Wire.onReceive(receiveEvent); //注册接收到主机字符的事件
+ //Wire.onRequest(requestEvent); // 注册主机通知从机上传数据的事件  //因为 电机UNO板不需要 返回数据到主机所以 不需要
+}
+
+void loop()
+{  
+  delay(100);//延时0.1s
+  led1=digitalRead(2); 
+  led2=digitalRead(3); 
+  if(led1==0&&led2==0)
+      {
+        
+        {
+          analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10,200);
+    digitalWrite(12,HIGH);    
+    analogWrite(9,200);
+    digitalWrite(8,HIGH);
+    analogWrite(6,0);
+    digitalWrite(7,LOW); 
+    Serial.println("前");//test
+        }
+      
+      }
+      else if(led1==1)
+        {
+          analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10, 0);
+    digitalWrite(12,LOW);
+    analogWrite(9,0);
+    digitalWrite(8,LOW);
+    analogWrite(6,0);
+    digitalWrite(7,LOW);
+   // digitalWrite(4,LOW); 
+    Serial.println("停");//test
+      
+          delay(50);
+      
+      
+          {
+            analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10,200);
+    digitalWrite(12,HIGH); 
+    analogWrite(9,0);
+    digitalWrite(8,LOW);
+    analogWrite(6,200);
+    digitalWrite(7,HIGH);
+    Serial.println("左");//test
+          }
+      
+          if(led1==0)
+          {
+            {
+              analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10, 0);
+    digitalWrite(12,LOW);
+    analogWrite(9,0);
+    digitalWrite(8,LOW);
+    analogWrite(6,0);
+    digitalWrite(7,LOW);
+   // digitalWrite(4,LOW); 
+    Serial.println("停");//test
+            }
+      
+            delay(50);
+    
+      
+          
+          {
+            analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10,200);
+    digitalWrite(12,HIGH);    
+    analogWrite(9,200);
+    digitalWrite(8,HIGH);
+    analogWrite(6,0);
+    digitalWrite(7,LOW); 
+    Serial.println("前");//test
+          }
+      
+          }
+        }
+      else if(led2==1)
+      {
+        {
+          analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10, 0);
+    digitalWrite(12,LOW);
+    analogWrite(9,0);
+    digitalWrite(8,LOW);
+    analogWrite(6,0);
+    digitalWrite(7,LOW);
+   // digitalWrite(4,LOW); 
+    Serial.println("停");//test
+        }
+   
+        delay(50);
+    
+     
+        {
+          analogWrite(11,200);
+    digitalWrite(13,HIGH);
+    analogWrite(10, 0);
+    digitalWrite(12,LOW);
+    analogWrite(9,200);
+    digitalWrite(8,HIGH);
+    analogWrite(6,0);
+    digitalWrite(7,LOW);
+    Serial.println("右");//test
+        }
+   
+        if(led2==0)
+        {
+          {
+            analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10, 0);
+    digitalWrite(12,LOW);
+    analogWrite(9,0);
+    digitalWrite(8,LOW);
+    analogWrite(6,0);
+    digitalWrite(7,LOW);
+   // digitalWrite(4,LOW); 
+    Serial.println("停");//test
+          }
+          
+ 
+          delay(50);
+  
+      
+         {
+          analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10,200);
+    digitalWrite(12,HIGH);    
+    analogWrite(9,200);
+    digitalWrite(8,HIGH);
+    analogWrite(6,0);
+    digitalWrite(7,LOW); 
+    Serial.println("前");//test
+         }
+
+        }
+      }
+      else if(led2==1&&led1==1)
+      {
+        analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10, 0);
+    digitalWrite(12,LOW);
+    analogWrite(9,0);
+    digitalWrite(8,LOW);
+    analogWrite(6,0);
+    digitalWrite(7,LOW);
+   // digitalWrite(4,LOW); 
+    Serial.println("停");//test
+      
+      }
+  
+}
+
+void receiveEvent(int howMany)
+{
+  while( Wire.available()>0)  // 循环执行，直到数据包只剩下最后一个字符
+  {
+     c = Wire.read();         // 作为字符接收字节 int
+    Serial.println(c);       //有效        // 把字符打印到串口监视器中
+  }
+
+
+
+
+
+
+  
+//以下为控制电机的代码
+/*if(c==1)
+  {
+    analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10,255);
+    digitalWrite(12,HIGH);    
+    analogWrite(9,255);
+    digitalWrite(8,HIGH);
+    analogWrite(6,0);
+    digitalWrite(7,LOW); 
+    Serial.println("前");//test
+
+  }
+  if(c==2)
+  {//zhongdian!!!!!!//后
+    analogWrite(11,240);
+    digitalWrite(13,HIGH);
+    analogWrite(10, 0);
+    digitalWrite(12,LOW);
+    analogWrite(9,0);
+    digitalWrite(8,LOW);
+    analogWrite(6, 255);
+    digitalWrite(7,HIGH);
+    Serial.println("后");//testx
+
+    }
+    if(c==3)
+  {//zhongdian!!!!!!//左
+    analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10,255);
+    digitalWrite(12,HIGH); 
+    analogWrite(9,0);
+    digitalWrite(8,LOW);
+    analogWrite(6,255);
+    digitalWrite(7,HIGH);
+    Serial.println("左");//test
+
+    }
+      if(c==4)
+  {//zhongdian!!!!!!//右
+    analogWrite(11,255);
+    digitalWrite(13,HIGH);
+    analogWrite(10, 0);
+    digitalWrite(12,LOW);
+    analogWrite(9,255);
+    digitalWrite(8,HIGH);
+    analogWrite(6,0);
+    digitalWrite(7,LOW);
+    Serial.println("右");//test
+
+    }
+      if(c==5)
+  { //zhongdian!!!!!!//厅
+    analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10, 0);
+    digitalWrite(12,LOW);
+    analogWrite(9,0);
+    digitalWrite(8,LOW);
+    analogWrite(6,0);
+    digitalWrite(7,LOW);
+   // digitalWrite(4,LOW); 
+    Serial.println("停");//test
+    }
+    if(c==6)
+  {
+    digitalWrite(4,HIGH);  
+  }
+ if(c==7)
+ {
+  digitalWrite(4,LOW);
+   }
+   if(c==8)//巡航前
+  {
+    analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10,200);
+    digitalWrite(12,HIGH);    
+    analogWrite(9,200);
+    digitalWrite(8,HIGH);
+    analogWrite(6,0);
+    digitalWrite(7,LOW); 
+    Serial.println("前");//test
+
+  }
+      if(c==9)//巡航
+  {//zhongdian!!!!!!//左
+    analogWrite(11,0);
+    digitalWrite(13,LOW);
+    analogWrite(10,200);
+    digitalWrite(12,HIGH); 
+    analogWrite(9,0);
+    digitalWrite(8,LOW);
+    analogWrite(6,200);
+    digitalWrite(7,HIGH);
+    Serial.println("左");//test
+
+    }
+     if(c==10)//巡航
+  {//zhongdian!!!!!!//右
+    analogWrite(11,200);
+    digitalWrite(13,HIGH);
+    analogWrite(10, 0);
+    digitalWrite(12,LOW);
+    analogWrite(9,200);
+    digitalWrite(8,HIGH);
+    analogWrite(6,0);
+    digitalWrite(7,LOW);
+    Serial.println("右");//test
+
+    }*/
+
+   
+}
